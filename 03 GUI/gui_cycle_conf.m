@@ -77,7 +77,7 @@ htrs_HP=sum(cy_conf.EX_d(2,1:IP_in_pos)==0);
 htrs_IP=sum(cy_conf.EX_d(2,IP_in_pos:LP_in_pos)==0);
 
 % Build heater train panel
-htr_train_texts={'Number of Low Pressure FWH','Number of Intermediate Pressure FWH','Number of High Pressure FWH'};
+htr_train_texts={'Number of Low Pres. FWH','Number of Intermediate Pres. FWH','Number of High Pres. FWH'};
 htr_train_values=[cy_conf.N_FWH_LP,htrs_IP,htrs_HP];
 htr_train_options_HP=[1,2];
 htr_train_options_IP=[0,1,2];
@@ -232,18 +232,25 @@ f.Visible='on';
     end
 
     function boxes=build_htr_train_listboxes(pan,texts,values,opt1,opt2,opt3,callback)
-        % Fill a panel with two listboxes
+        % Fill a panel with three listboxes and a button
         num_boxes=3;
+        width_lba=0.825;
         margin=0.01;
-        inter_margin=0.01;
-        text_width_hor=5/6*(1-margin*2-inter_margin*(num_boxes-1))/num_boxes;
-        box_width_hor=1/6*(1-margin*2-inter_margin*(num_boxes-1))/num_boxes;
+        inter_margin=0.01;        
+        text_width_hor=5/6*(width_lba-margin*2-inter_margin*(num_boxes-1))/num_boxes;
+        box_width_hor=1/6*(width_lba-margin*2-inter_margin*(num_boxes-1))/num_boxes;
         box_height=1-margin*2;
+        
+        % Open temperatures plot button
+        uicontrol(pan, 'Style','pushbutton','Units','normalized',...
+            'Position',[margin,margin,1-width_lba-margin*2,box_height],...
+            'String','Feedwater temp. rise',...
+            'Callback',@(src,evdata) show_FW_temp_rise(src,evdata,cy_conf));
         
         boxes=cell(num_boxes,1);
         
-        text_box=[margin,0.01-0.2,text_width_hor,box_height];
-        pos_box=[margin+text_width_hor,...
+        text_box=[1-width_lba+margin,0.01-0.2,text_width_hor,box_height];
+        pos_box=[1-width_lba+margin+text_width_hor,...
             0.01,box_width_hor,box_height];
         
         options={opt1,opt2,opt3};
@@ -406,5 +413,56 @@ f.Visible='on';
         drawnow;
     end
 
-
+    function show_FW_temp_rise(~,~,c_org)
+        % Show the Feedwater temperature rise across the FWH train
+        
+        % Store results
+        store_values_in_cycle(c_org);
+        
+        % Temps vector
+        temps=zeros(1,c_org.N_FWH+1);
+        
+        % Pressures
+        pres=c_org.EX_d(1,c_org.EX_d(2,:)==0);
+        p_deair=c_org.EX_d(1,c_org.EX_d(2,:)==3);
+        
+        % Calculate temperature rise for each FWH in the LP train        
+        T_in=Ts_p_97(c_org.EX_d(1,end)/10);
+        for h=c_org.N_FWH:-1:c_org.N_FWH_HP+1
+            T_out=Ts_p_97(pres(h)/10)-c_org.TTD_d(h);
+            
+            temps(h+1)=T_out-T_in;
+            
+            T_in=T_out;
+        end
+        
+        % Calculate temperature rise for deareator
+        temps(c_org.N_FWH_HP+1)=Ts_p_97(p_deair/10)-T_in;
+        
+        % Calculate temperature rise for each FWH in the HP train        
+        T_in=Ts_p_97(p_deair/10);
+        for h=c_org.N_FWH_HP:-1:1
+            T_out=Ts_p_97(pres(h)/10)-c_org.TTD_d(h);
+            
+            temps(h)=T_out-T_in;
+            
+            T_in=T_out;
+        end
+        
+        % Create bar plot
+        f_rise=figure('Name','Temperature rise at each FWH','Visible','off',...
+            'NumberTitle','off');
+        
+        ax=axes(f_rise);
+        
+        bar(ax,temps);
+        
+        ax.Title.String='Temperature rise at each FWH and deareator';
+        ax.XLabel.String='FWH number';
+        ax.YLabel.String='Temperature rise [ºC]';
+        ax.XTickLabel{c_org.N_FWH_HP+1}='DeAir';
+        
+        f_rise.Visible='on';
+        
+    end
 end
