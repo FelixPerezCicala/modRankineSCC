@@ -1,0 +1,53 @@
+function [txt] = leaks_draw(ax, xy, leaks_struct, fontsize, txtlist)
+% Draw text with a box in ax, at positions x y
+
+% Prepare strings
+str1=['Valve stem leakages [kg/s]: A = ', ...
+    num2str(leaks_struct.vlv_stem(2),'%.5f'),...
+    ' B = ', num2str(leaks_struct.vlv_stem(3),'%.5f')];
+
+
+str2=['Shaft end packings [kg/s]: 1 = ', ...
+    num2str(leaks_struct.shft_nd(1),'%.5f'),...
+    ' 3 = ', num2str(leaks_struct.shft_nd(3),'%.5f'),...
+    ' 4 = ', num2str(leaks_struct.shft_nd(4),'%.5f'),...
+    ' 6 = ', num2str(leaks_struct.shft_nd(6),'%.5f')];
+
+str3=['Leak to deaerator [kg/s] = ', ...
+    num2str(leaks_struct.shft_nd(3)-leaks_struct.shft_nd(4),'%.5f')];
+
+
+if nargin==4
+    % Valve stem leakages
+    t1 = text(ax,xy(1),xy(2),str1,...
+        'HorizontalAlignment','left','VerticalAlignment','baseline',...
+        'FontUnits','normalized','FontSize',fontsize,...
+        'Clipping', 'on');
+    
+    % Shaft end packings
+    line=2.5;
+    
+    t2 = text(ax,xy(1),xy(2)-line,str2,...
+        'HorizontalAlignment','left','VerticalAlignment','baseline',...
+        'FontUnits','normalized','FontSize',fontsize,...
+        'Clipping', 'on');
+    
+    t3 = text(ax,xy(1),xy(2)-line*2,str3,...
+        'HorizontalAlignment','left','VerticalAlignment','baseline',...
+        'FontUnits','normalized','FontSize',fontsize,...
+        'Clipping', 'on');
+    
+    txt={t1,t2,t3,{}};
+    
+else
+    % Rewrite if already written
+    txtlist{1}.String=str1;
+    txtlist{2}.String=str2;
+    txtlist{3}.String=str3;
+    
+end
+
+
+
+end
+
